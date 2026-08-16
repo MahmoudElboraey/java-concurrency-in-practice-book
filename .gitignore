@@ -1,0 +1,17 @@
+# Private study checklist — not tracked
+CHAPTER_TASKS.md
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Build output
+target/
+build/
+*.class
+
+# OS
+.DS_Store
