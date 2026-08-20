@@ -3,74 +3,88 @@ package threadcoordination;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class SearchServiceSLA {
 
     public static void main(String[] args) {
 
-        ConnectorTask amadeus = new ConnectorTask(1000);
-        ConnectorTask airarabia = new ConnectorTask(300);
-        ConnectorTask aegen = new ConnectorTask(4000);
-        List<ConnectorTask> connectors = new ArrayList<ConnectorTask>();
-        connectors.add(amadeus);
-        connectors.add(airarabia);
-        connectors.add(aegen);
-        for (ConnectorTask task : connectors) {
-            task.setDaemon(true);
+        List<ConnectorTask> tasks = new ArrayList<>();
+        tasks.add(new ConnectorTask("amadeus", 1000));
+        tasks.add(new ConnectorTask("airarabia", 300));
+        tasks.add(new ConnectorTask("aegean", 4000));
+
+        List<Thread> threads = new ArrayList<>();
+        for (ConnectorTask task : tasks) {
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            threads.add(t);
         }
 
-        for (Thread t : connectors) {
+        for (Thread t : threads) {
             t.start();
         }
 
-        long total = 2000;
-        for (Thread t : connectors) {
-
-            long currentTime = System.currentTimeMillis();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        for (Thread t : threads) {
+            long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+            if (remainingMs <= 0) break;
             try {
-                t.join(total);
+                t.join(remainingMs);
             } catch (InterruptedException e) {
-
+                System.out.println("main interrupted while waiting for connectors");
+                Thread.currentThread().interrupt();
             }
-            long spent = System.currentTimeMillis() - currentTime;
-            long remain = total - spent;
-            if (remain <= 0) break;
-            total = remain;
         }
 
-        for (ConnectorTask task : connectors) {
-            task.interrupt();
-            String state = task.getFinished();
-            System.out.println("thread  " + task.getName() + " is " + state);
-
+        List<String> results = new ArrayList<>();
+        for (int i = 0; i < tasks.size(); i++) {
+            ConnectorTask task = tasks.get(i);
+            if (task.isFinished()) {
+                results.add(task.getResult());
+            } else {
+                threads.get(i).interrupt();
+                System.out.println(task.getName() + " missed the SLA, cancelled");
+            }
         }
 
-
+        System.out.println("collected results: " + results);
     }
 
-    private static class ConnectorTask extends Thread {
-        private long numberOfSeconds;
-        private String finished;
-        public ConnectorTask(long numberOfSeconds) {
-            this.numberOfSeconds = numberOfSeconds;
-            this.finished = "cancelled";
+    private static class ConnectorTask implements Runnable {
+
+        private final String name;
+        private final long sleepMillis;
+        private boolean finished = false;
+        private String result;
+
+        ConnectorTask(String name, long sleepMillis) {
+            this.name = name;
+            this.sleepMillis = sleepMillis;
         }
 
         @Override
         public void run() {
             try {
-                Thread.sleep(numberOfSeconds);
-                finished = "finished";
-            }catch (InterruptedException e){
-                System.out.println("unfinished yet , cancelled");
+                Thread.sleep(sleepMillis);
+                result = name + ": 12 offers";
+                finished = true;
+            } catch (InterruptedException e) {
+                System.out.println(name + " cancelled");
                 Thread.currentThread().interrupt();
             }
-
         }
 
-        public String getFinished() {
+        public boolean isFinished() {
             return finished;
         }
 
+        public String getResult() {
+            return result;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
