@@ -8,33 +8,50 @@ public class SearchServiceSLA {
 
     public static void main(String[] args) {
 
-        Thread amadeus = new Thread(new connectorTask(1000));
-        Thread airarabia = new Thread(new connectorTask(3000));
-        Thread aegen = new Thread(new connectorTask(4000));
-        List<Thread> connectors = new ArrayList<Thread>();
+        ConnectorTask amadeus = new ConnectorTask(1000);
+        ConnectorTask airarabia = new ConnectorTask(300);
+        ConnectorTask aegen = new ConnectorTask(4000);
+        List<ConnectorTask> connectors = new ArrayList<ConnectorTask>();
         connectors.add(amadeus);
         connectors.add(airarabia);
         connectors.add(aegen);
+        for (ConnectorTask task : connectors) {
+            task.setDaemon(true);
+        }
 
         for (Thread t : connectors) {
             t.start();
         }
 
+        long total = 2000;
         for (Thread t : connectors) {
+
+            long currentTime = System.currentTimeMillis();
             try {
-                t.join(2000);
+                t.join(total);
             } catch (InterruptedException e) {
 
             }
+            long spent = System.currentTimeMillis() - currentTime;
+            long remain = total - spent;
+            if (remain <= 0) break;
+            total = remain;
+        }
+
+        for (ConnectorTask task : connectors) {
+            task.interrupt();
+            String state = task.getFinished();
+            System.out.println("thread  " + task.getName() + " is " + state);
+
         }
 
 
     }
 
-    private static class connectorTask implements Runnable {
+    private static class ConnectorTask extends Thread {
         private long numberOfSeconds;
         private String finished;
-        public connectorTask(long numberOfSeconds) {
+        public ConnectorTask(long numberOfSeconds) {
             this.numberOfSeconds = numberOfSeconds;
             this.finished = "cancelled";
         }
@@ -43,10 +60,12 @@ public class SearchServiceSLA {
         public void run() {
             try {
                 Thread.sleep(numberOfSeconds);
+                finished = "finished";
             }catch (InterruptedException e){
                 System.out.println("unfinished yet , cancelled");
+                Thread.currentThread().interrupt();
             }
-            finished = "finished";
+
         }
 
         public String getFinished() {
