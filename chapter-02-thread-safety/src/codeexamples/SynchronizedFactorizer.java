@@ -1,26 +1,29 @@
 package codeexamples;
 
+import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
-import servlet.Servlet;
 import servlet.ServletRequest;
 import servlet.ServletResponse;
 
 import java.math.BigInteger;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 @ThreadSafe
-public class CountingFactorizer implements Servlet {
-    private final AtomicLong counter = new AtomicLong(0);
+public class SynchronizedFactorizer {
+    @GuardedBy("this") private BigInteger[] factors ;
+    @GuardedBy("this") private  BigInteger lastNumber;
 
-    public long getCount (){
-        return counter.get();
-    }
 
-    public void service (ServletRequest request , ServletResponse response){
+    public synchronized void service (ServletRequest request , ServletResponse response){
         BigInteger i = extractFromRequest(request);
-        BigInteger [] factors = factor(i);
-        counter.incrementAndGet();
-        encodeIntoResponse(response , factors);
+        if (i.equals(lastNumber)) {
+            encodeIntoResponse(response, factors);
+        }else {
+            BigInteger[] factors = factor(i);
+            lastNumber = i;
+            this.factors =factors;
+            encodeIntoResponse(response, factors);
+        }
     }
 
     private BigInteger extractFromRequest(ServletRequest request){
@@ -36,5 +39,4 @@ public class CountingFactorizer implements Servlet {
         // do some work here
         return new BigInteger[]{i};
     }
-
 }

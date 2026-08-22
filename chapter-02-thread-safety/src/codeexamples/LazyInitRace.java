@@ -1,5 +1,8 @@
 package codeexamples;
 
+import net.jcip.annotations.NotThreadSafe;
+
+@NotThreadSafe
 public class LazyInitRace {
 
     private ExpensiveObject instance = null;
