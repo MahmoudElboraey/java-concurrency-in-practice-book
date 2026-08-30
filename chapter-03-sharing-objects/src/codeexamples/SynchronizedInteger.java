@@ -2,7 +2,6 @@ package codeexamples;
 
 
 import net.jcip.annotations.GuardedBy;
-import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
