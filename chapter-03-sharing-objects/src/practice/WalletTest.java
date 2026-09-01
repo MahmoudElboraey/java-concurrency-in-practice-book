@@ -95,7 +95,8 @@ public class WalletTest {
                     maxTransferSeen = Math.max(maxTransferSeen, amount);
                     from.withdraw(amount);
                     to.deposit(amount);
-                }}
+                }
+            }
         }
     }
 
