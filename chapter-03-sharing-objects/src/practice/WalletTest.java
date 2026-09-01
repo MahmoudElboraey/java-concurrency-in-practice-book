@@ -34,6 +34,7 @@ public class WalletTest {
             thread1.join();
             thread2.join();
         }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
 
         }
 
@@ -57,7 +58,7 @@ public class WalletTest {
 
         public synchronized void deposit(long value) {
         /*
-        why i make volatile because the increment operation is not a single operation (read , add , write)
+        why i make synchronized because the increment operation is not a single operation (read , add , write)
         i wanna encapsualte these operations and make sure they will be executed by one thread at a time , because balance is shared mutable state
          */
             this.balance += value;
@@ -72,7 +73,7 @@ public class WalletTest {
             return balance;
         }
 
-        public synchronized long getMaxTransferSeen() {
+        public  long getMaxTransferSeen() {
             return maxTransferSeen;
         }
 
@@ -92,7 +93,9 @@ public class WalletTest {
             Wallet second = (first == from) ? to : from;
             synchronized (first) {
                 synchronized (second) {
-                    maxTransferSeen = Math.max(maxTransferSeen, amount);
+                    synchronized (Wallet.class) {
+                        maxTransferSeen = Math.max(maxTransferSeen, amount);
+                    }
                     from.withdraw(amount);
                     to.deposit(amount);
                 }
