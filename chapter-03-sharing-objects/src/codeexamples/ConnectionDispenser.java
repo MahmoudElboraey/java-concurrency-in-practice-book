@@ -12,7 +12,7 @@ public class ConnectionDispenser {
         @Override
         protected Connection initialValue() {
             try {
-                return DriverManager.getConnection(DB_URL);
+                return DriverManager.getConnection(DB_URL); // creates a new connection on each call // 10 threads 10 different connections
             } catch (SQLException e) {
                 throw new RuntimeException("Unable to acquire Connection, e", e);
             }
